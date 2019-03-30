@@ -1,0 +1,15 @@
+{
+  "name": "S6-Marketing-Scripts",
+  "version": "0.0.1",
+  "description": "A simple web scraping script that collects emails, websites, and social handles from Society6 user bios.",
+  "main": "index.js",
+  "repository": "https://github.com/TrueSlu/S6-Marketing-Scripts.git",
+  "author": "Steven Lu <slu.true@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "csvdata": "^1.7.0",
+    "jssoup": "^0.0.10",
+    "node-fetch": "^2.3.0"
+  }
+}
