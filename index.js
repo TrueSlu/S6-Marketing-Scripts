@@ -2,6 +2,15 @@ const csvdata = require('csvdata');
 const JSSoup = require('jssoup').default;
 const fetch = require('node-fetch');
 
+const actionArtist = (artistName) => {
+    return new Promise(async (resolve, reject) => {
+        const HTML = await scrapeArtist(`https://www.society6.com/${artistName}`);
+        const { bio, name, designs } = await getArtistInfo(HTML);
+        await saveArtist(bio, name, designs, `https://www.society6.com/${artistName}`);
+        resolve();
+    });
+}
+
 const scrapeArtist = (artist) => {
     return new Promise(async (resolve, reject) => {
     
@@ -40,6 +49,12 @@ const getArtistInfo = (HTML) => {
 
             if (designsCount) {
                 designs = designsCount.text.replace("Designs", "")
+                console.log(designs);
+                if (designs.includes("k")) {
+                    designs = parseFloat(designs.replace("k", "")) * 1000;
+                } else {
+                    designs = parseFloat(designs);
+                }
             } else {
                 designs = null;
             }
@@ -53,14 +68,13 @@ const getArtistInfo = (HTML) => {
     });
 }
 
-const processArtist = (bio, emails, handles, websites) => {
-    return new Promise((resolve, reject) => {
-        
-    });
-}
-
 const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
+        if (designs < 20) {
+            console.log(designs);
+            console.log("here");
+            return resolve();
+        }
         const artistObject = {
             DONE: "",
             link: link,
@@ -133,37 +147,73 @@ const processDiscover = (HTML) => {
     });
 }
 
-const index = async (options) => {
+const actionDiscover = (pageNumber) => {
+    return new Promise(async (resolve, reject) => {
+        const HTML = await scrapeDiscover(pageNumber);
+        const links = await processDiscover(HTML);
+        resolve(links);
+    })
 
-    let discoverCount = 1;
-    while (true) {
-        console.log(discoverCount);
-        let discover = await scrapeDiscover(discoverCount).catch((err) => {
-            console.log(err);
+}
+
+const scrapeFollowers = (artistName) => {
+    return new Promise(async (resolve, reject) => {
+        let response = await fetch(`https://www.society6.com/${artistName}/followers`).catch((err) => {
+            reject(err);
         });
 
-        let artists = await processDiscover(discover).catch((err) => {
-            console.log(err);
-        });
+        response = await response.text();
+        resolve(response);
+    });
+}
 
-        for (var artist of artists) {
-            let artistBio = await scrapeArtist(artist).catch((err) => {
-                console.log(err);
-            });
+const processFollowers = (HTML) => {
+    return new Promise((resolve, reject) => {
 
-            const { bio, name, designs } = await getArtistInfo(artistBio).catch((err) => {
-                console.log(err);
-            })
+        try {
+            const soup = new JSSoup(HTML);
+            const artistElements = soup.findAll('a', attrs={ class: 'user' });
+    
+            let followerLinks = [];
 
-            await saveArtist(bio, name, designs, artist).catch((err) => {
-                console.log(err);
-            })
+            for (var follower of artistElements) {
+                let followerLink = follower.attrs.href;
+                followerLink = `https://society6.com${followerLink}`;
+                followerLinks.push(followerLink);
+            }
 
+            resolve(followerLinks);
 
+        } catch(err) {
+            reject(err);
         }
+    });
+}
 
-        discoverCount++;
-    }
+const actionFollowers = (artistName) => {
+    return new Promise(async (resolve, reject) => {
+        const HTML = await scrapeFollowers(artistName);
+        const links = await processFollowers(HTML);
+        resolve(links);
+    })
+}
+
+const index = async (options) => {
+    return new Promise(async (resolve, reject) => {
+        let discoverCount = 1;
+
+        while (true) {
+            let discoverArtists = await actionDiscover(discoverCount);
+            for (var discoverArtist of discoverArtists) {
+                await actionArtist(discoverArtist.replace("https://society6.com/", ""));
+                let followerArtists = await actionFollowers(discoverArtist.replace("https://society6.com/", ""));
+                for (var followerArtist of followerArtists) {
+                    await actionArtist(followerArtist.replace("https://society6.com/", ""));
+                }
+            }
+            discoverCount++;
+        }
+    })
 }
 
 index({})
