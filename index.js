@@ -42,7 +42,7 @@ const getArtistInfo = (HTML) => {
             }
 
             if (nameElement) {
-                name = nameElement.text;
+                name = nameElement.text.replace(/,/g, "");
             } else {
                 name = null;
             }
