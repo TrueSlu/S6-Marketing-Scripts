@@ -7,9 +7,6 @@ const actionArtist = (artistName) => {
         console.log("Getting artist");
         const HTML = await scrapeArtist(`https://www.society6.com/${artistName}`);
         const { bio, name, designs } = await getArtistInfo(HTML);
-        console.log(bio);
-        console.log(name);
-        console.log(designs);
         await saveArtist(bio, name, designs, `https://www.society6.com/${artistName}`);
         resolve();
     });
@@ -53,7 +50,6 @@ const getArtistInfo = (HTML) => {
 
             if (designsCount) {
                 designs = designsCount.text.replace("Designs", "")
-                console.log(designs);
                 if (designs.includes("k")) {
                     designs = parseFloat(designs.replace("k", "")) * 1000;
                 } else {
@@ -75,7 +71,6 @@ const getArtistInfo = (HTML) => {
 const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
         if (designs < 20) {
-            console.log(designs);
             return resolve();
         }
         const artistObject = {
@@ -197,7 +192,6 @@ const checkArtist = (artistLink) => {
         csvdata.load("./artists.csv").then((data) => {
             for (var datum of data) {
                 if (datum.link === artistLink) {
-                    console.log("found");
                     return resolve(true);
                 }
             }
@@ -215,7 +209,6 @@ const index = async (options) => {
             let discoverArtists = await actionDiscover(discoverCount);
             for (var discoverArtist of discoverArtists) {
                 inList = await checkArtist(discoverArtist.replace("https://", "https://www."));
-                console.log(inList);
                 if (inList) {
                     console.log("Continuing");
                     continue;
@@ -224,7 +217,6 @@ const index = async (options) => {
                     let followerArtists = await actionFollowers(discoverArtist.replace("https://society6.com/", ""));
                     for (var followerArtist of followerArtists) {
                         inList = await checkArtist(followerArtist.replace("https://", "https://www."));
-                        console.log(inList);
                         if (inList) {
                             console.log("Continuing");
                             continue;
