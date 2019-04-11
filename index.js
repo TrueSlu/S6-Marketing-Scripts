@@ -4,8 +4,12 @@ const fetch = require('node-fetch');
 
 const actionArtist = (artistName) => {
     return new Promise(async (resolve, reject) => {
+        console.log("Getting artist");
         const HTML = await scrapeArtist(`https://www.society6.com/${artistName}`);
         const { bio, name, designs } = await getArtistInfo(HTML);
+        console.log(bio);
+        console.log(name);
+        console.log(designs);
         await saveArtist(bio, name, designs, `https://www.society6.com/${artistName}`);
         resolve();
     });
@@ -72,7 +76,6 @@ const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
         if (designs < 20) {
             console.log(designs);
-            console.log("here");
             return resolve();
         }
         const artistObject = {
@@ -81,15 +84,6 @@ const saveArtist = (bio, name, designs, link) => {
             name: name,
             designs: designs,
             bio: bio,
-        }
-
-        const data = await csvdata.load("./artists.csv");
-
-
-        for (var datum of data) {
-            if (datum.link === artistObject.link) {
-                return resolve();
-            }
         }
 
         await csvdata.write("./artists.csv", [artistObject], {
@@ -198,17 +192,46 @@ const actionFollowers = (artistName) => {
     })
 }
 
+const checkArtist = (artistLink) => {
+    return new Promise((resolve, reject) => {
+        csvdata.load("./artists.csv").then((data) => {
+            for (var datum of data) {
+                if (datum.link === artistLink) {
+                    console.log("found");
+                    return resolve(true);
+                }
+            }
+            return resolve(false);
+        })
+    });
+}
+
 const index = async (options) => {
     return new Promise(async (resolve, reject) => {
         let discoverCount = 5;
+        var inList;
 
         while (true) {
             let discoverArtists = await actionDiscover(discoverCount);
             for (var discoverArtist of discoverArtists) {
-                await actionArtist(discoverArtist.replace("https://society6.com/", ""));
-                let followerArtists = await actionFollowers(discoverArtist.replace("https://society6.com/", ""));
-                for (var followerArtist of followerArtists) {
-                    await actionArtist(followerArtist.replace("https://society6.com/", ""));
+                inList = await checkArtist(discoverArtist.replace("https://", "https://www."));
+                console.log(inList);
+                if (inList) {
+                    console.log("Continuing");
+                    continue;
+                } else {
+                    await actionArtist(discoverArtist.replace("https://society6.com/", ""));
+                    let followerArtists = await actionFollowers(discoverArtist.replace("https://society6.com/", ""));
+                    for (var followerArtist of followerArtists) {
+                        inList = await checkArtist(followerArtist.replace("https://", "https://www."));
+                        console.log(inList);
+                        if (inList) {
+                            console.log("Continuing");
+                            continue;
+                        } else {
+                            await actionArtist(followerArtist.replace("https://society6.com/", ""));
+                        }
+                    }
                 }
             }
             discoverCount++;
