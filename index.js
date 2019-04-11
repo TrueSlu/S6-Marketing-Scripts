@@ -200,7 +200,7 @@ const actionFollowers = (artistName) => {
 
 const index = async (options) => {
     return new Promise(async (resolve, reject) => {
-        let discoverCount = 1;
+        let discoverCount = 5;
 
         while (true) {
             let discoverArtists = await actionDiscover(discoverCount);
