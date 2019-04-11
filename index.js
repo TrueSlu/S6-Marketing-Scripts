@@ -20,14 +20,31 @@ const getArtistInfo = (HTML) => {
             const soup = new JSSoup(HTML);
             const nameElement = soup.find('h2', attrs={ class: 'shopName_about_ieGGS' });
             const bioElement = soup.find('div', attrs={ class: 'aboutTextCollapsed_about_3SIzj' });
-            const followerCountElement = soup.find('p', attrs={ class: 'stat_shopStatsBar_3czvW' });
-            const followingCountElement = soup.find('p', attrs={ class: 'statDetail_shopStatsBar_33Zx0' });
-            stat_shopStatsBar_3czvW
+            const designsCount = soup.find('a', attrs={ 'data-gtm-event': 'designs count' });
 
+            var bio;
+            var name;
+            var designs;
 
-            console.log(followingCountElement.text);
+            if (bioElement) {
+                bio = bioElement.text.replace(/\n/g, "").replace(/,/g, "");
+            } else {
+                let bio = null;
+            }
 
-            resolve({ bio: bioElement.text, name: nameElement.text });
+            if (nameElement) {
+                name = nameElement.text;
+            } else {
+                name = null;
+            }
+
+            if (designsCount) {
+                designs = designsCount.text.replace("Designs", "")
+            } else {
+                designs = null;
+            }
+
+            resolve({ bio: bio, name: name, designs: designs });
 
 
         } catch(err) {
@@ -37,11 +54,41 @@ const getArtistInfo = (HTML) => {
 }
 
 const processArtist = (bio, emails, handles, websites) => {
-
+    return new Promise((resolve, reject) => {
+        
+    });
 }
 
-const saveArtist = (email, handle, website) => {
+const saveArtist = (bio, name, designs, link) => {
+    return new Promise(async (resolve, reject) => {
+        const artistObject = {
+            DONE: "",
+            link: link,
+            name: name,
+            designs: designs,
+            bio: bio,
+        }
 
+        const data = await csvdata.load("./artists.csv");
+
+
+        for (var datum of data) {
+            if (datum.link === artistObject.link) {
+                return resolve();
+            }
+        }
+
+        await csvdata.write("./artists.csv", [artistObject], {
+            append: true,
+            header: 'DONE,link,name,designs,bio',
+        }).then(() => {
+            resolve();
+
+        }).catch((err) => {
+            reject(err);
+        })
+
+    });
 }
 
 const scrapeDiscover = (pageNumber) => {
@@ -87,49 +134,39 @@ const processDiscover = (HTML) => {
 }
 
 const index = async (options) => {
-    if (options.maxArtists) {
-        for (var i = 0; i < options.maxArtists; i++) {
 
-        }
-    } else {
-        let discoverCount = 1;
-        while (true) {
-            let discover = await scrapeDiscover(discoverCount).catch((err) => {
+    let discoverCount = 1;
+    while (true) {
+        console.log(discoverCount);
+        let discover = await scrapeDiscover(discoverCount).catch((err) => {
+            console.log(err);
+        });
 
+        let artists = await processDiscover(discover).catch((err) => {
+            console.log(err);
+        });
+
+        for (var artist of artists) {
+            let artistBio = await scrapeArtist(artist).catch((err) => {
+                console.log(err);
             });
 
-            let artists = await processDiscover(discover).catch((err) => {
+            const { bio, name, designs } = await getArtistInfo(artistBio).catch((err) => {
+                console.log(err);
+            })
 
-            });
+            await saveArtist(bio, name, designs, artist).catch((err) => {
+                console.log(err);
+            })
 
-            for (var artist of artists) {
-                let artistBio = await scrapeArtist(artist).catch((err) => {
 
-                });
-                let { email, handle, website } = await processArtist(artistBio).catch((err) => {
-
-                })
-                if (email !== null || handle !== null || website !== null) {
-                    await saveArtist(email, handle, website).catch((err) => {
-                        
-                    });
-                }
-            }
-
-            discoverCount++;
         }
+
+        discoverCount++;
     }
 }
 
-const testing = async () => {
-    let res = await scrapeDiscover(1);
-    let artistlinks = await processDiscover(res);
-    const result = await scrapeArtist(artistlinks[0]);
-    const bio = await getArtistInfo(result);
-}
-
-testing();
-
+index({})
 
 /*index({
     maxArtists: null, //set to a number if you want to limit the max number of artists checked
