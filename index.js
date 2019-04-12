@@ -248,17 +248,18 @@ const spider = (firstArtistName) => {
 
         var artistList = await actionFollowers(firstArtistName);
         for (var artist of artistList) {
+            console.log(artist);
             inList = await checkArtist(artist.replace("https://", "https://www."));
             if (!inList) {
                 await actionArtist(artist.replace("https://society6.com/", ""));
             }
             var newArtists = await actionFollowers(artist.replace("https://society6.com", ""));
-            artistList.push(newArtists);
+            artistList.concat(newArtists);
         }
     })
 }
 
-spider('bitart');
+spider('adaoart');
 
 /*index({
     maxArtists: null, //set to a number if you want to limit the max number of artists checked
