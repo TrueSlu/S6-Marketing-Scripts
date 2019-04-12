@@ -10,3 +10,5 @@ A simple web scraping script that collects emails, websites, and social handles 
 1. `node index.js`
 1. Let it run.
 1. See the collected data in /out.
+
+Note that it's super spaghetti code... I was gonna make it nice, but then was like "oh wait I actually need to use this NOW." Sorry future me.
