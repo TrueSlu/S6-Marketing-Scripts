@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const actionArtist = (artistName) => {
     return new Promise(async (resolve, reject) => {
-        console.log("Getting artist");
+        console.log("Getting artist " + artistName);
         const HTML = await scrapeArtist(`https://www.society6.com/${artistName}`);
         const { bio, name, designs } = await getArtistInfo(HTML);
         await saveArtist(bio, name, designs, `https://www.society6.com/${artistName}`);
@@ -70,8 +70,13 @@ const getArtistInfo = (HTML) => {
 
 const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
-        if (designs < 20 || bio === null || bio === "") {
+        if (designs < 20) {
             console.log(`${designs} is not enough.`);
+            return resolve();
+        }
+
+        if (bio === null || bio === "" || bio === undefined) {
+            console.log("No bio");
             return resolve();
         }
 
@@ -194,7 +199,7 @@ const actionFollowers = (artistName) => {
 }
 
 const checkArtist = (artistLink) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         csvdata.load("./artists.csv").then((data) => {
             for (var datum of data) {
                 if (datum.link === artistLink) {
@@ -208,7 +213,7 @@ const checkArtist = (artistLink) => {
 
 const index = async (options) => {
     return new Promise(async (resolve, reject) => {
-        let discoverCount = 20;
+        let discoverCount = 200;
         var inList;
 
         while (true) {
@@ -237,7 +242,23 @@ const index = async (options) => {
     })
 }
 
-index({})
+const spider = (firstArtistName) => {
+    return new Promise(async (resolve, reject) => {
+        var inList;
+
+        var artistList = await actionFollowers(firstArtistName);
+        for (var artist of artistList) {
+            inList = await checkArtist(artist.replace("https://", "https://www."));
+            if (!inList) {
+                await actionArtist(artist.replace("https://society6.com/", ""));
+            }
+            var newArtists = await actionFollowers(artist.replace("https://society6.com", ""));
+            artistList.push(newArtists);
+        }
+    })
+}
+
+spider('bitart');
 
 /*index({
     maxArtists: null, //set to a number if you want to limit the max number of artists checked
