@@ -2,6 +2,18 @@ const csvdata = require('csvdata');
 const JSSoup = require('jssoup').default;
 const fetch = require('node-fetch');
 
+Array.prototype.unique = function() {
+    var a = this.concat();
+    for(var i=0; i<a.length; ++i) {
+        for(var j=i+1; j<a.length; ++j) {
+            if(a[i] === a[j])
+                a.splice(j--, 1);
+        }
+    }
+
+    return a;
+};
+
 const actionArtist = (artistName) => {
     return new Promise(async (resolve, reject) => {
         console.log("Getting artist " + artistName);
@@ -37,7 +49,7 @@ const getArtistInfo = (HTML) => {
             var designs;
 
             if (bioElement) {
-                bio = bioElement.text.replace(/\n/g, "").replace(/,/g, "");
+                bio = bioElement.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
             } else {
                 let bio = null;
             }
@@ -70,10 +82,7 @@ const getArtistInfo = (HTML) => {
 
 const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
-        if (designs < 20) {
-            console.log(`${designs} is not enough.`);
-            return resolve();
-        }
+
 
         if (bio === null || bio === "" || bio === undefined) {
             console.log("No bio");
@@ -84,6 +93,11 @@ const saveArtist = (bio, name, designs, link) => {
             console.log("Didn't find any keywords");
             return resolve();
         }
+
+        if (designs < 20) {
+            console.log(`${designs} is not enough.`);
+            return resolve();
+        }
         const artistObject = {
             DONE: "",
             link: link,
@@ -92,7 +106,7 @@ const saveArtist = (bio, name, designs, link) => {
             bio: bio,
         }
 
-        await csvdata.write("./artists.csv", [artistObject], {
+        await csvdata.write("./sheets/artists.csv", [artistObject], {
             append: true,
             header: 'DONE,link,name,designs,bio',
         }).then(() => {
@@ -177,9 +191,11 @@ const processFollowers = (HTML) => {
             let followerLinks = [];
 
             for (var follower of artistElements) {
-                let followerLink = follower.attrs.href;
-                followerLink = `https://society6.com${followerLink}`;
-                followerLinks.push(followerLink);
+                if (parseInt(follower.nextElement.nextElement.nextElement._text.replace(" Followers", "")) > 1000) {
+                    let followerLink = follower.attrs.href;
+                    followerLink = `https://society6.com${followerLink}`;
+                    followerLinks.push(followerLink);
+                }
             }
 
             resolve(followerLinks);
@@ -200,7 +216,7 @@ const actionFollowers = (artistName) => {
 
 const checkArtist = (artistLink) => {
     return new Promise(async (resolve, reject) => {
-        csvdata.load("./artists.csv").then((data) => {
+        csvdata.load("./sheets/artists.csv").then((data) => {
             for (var datum of data) {
                 if (datum.link === artistLink) {
                     return resolve(true);
@@ -242,24 +258,43 @@ const index = async (options) => {
     })
 }
 
+function arrayUnique(array) {
+    var a = array.concat();
+    for(var i=0; i<a.length; ++i) {
+        for(var j=i+1; j<a.length; ++j) {
+            if(a[i] === a[j])
+                a.splice(j--, 1);
+        }
+    }
+
+    return a;
+}
+
 const spider = (firstArtistName) => {
     return new Promise(async (resolve, reject) => {
         var inList;
-
+        var artist;
         var artistList = await actionFollowers(firstArtistName);
-        for (var artist of artistList) {
+        var count = 0;
+        while (count < artistList.length) {
+            artist = artistList[count];
             console.log(artist);
             inList = await checkArtist(artist.replace("https://", "https://www."));
             if (!inList) {
                 await actionArtist(artist.replace("https://society6.com/", ""));
             }
-            var newArtists = await actionFollowers(artist.replace("https://society6.com", ""));
-            artistList.concat(newArtists);
+            if (artistList.length < 500) {
+                var newArtists = await actionFollowers(artist.replace("https://society6.com", ""));
+                artistList = arrayUnique(artistList.concat(newArtists));
+
+            }
+            count++;
+            console.log("New artist list length: " + artistList.length);
         }
     })
 }
 
-spider('adaoart');
+spider('anyuka');
 
 /*index({
     maxArtists: null, //set to a number if you want to limit the max number of artists checked

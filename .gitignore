@@ -9,6 +9,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 artists.csv
+sheets
 
 # Runtime data
 pids
