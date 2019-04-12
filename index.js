@@ -70,7 +70,13 @@ const getArtistInfo = (HTML) => {
 
 const saveArtist = (bio, name, designs, link) => {
     return new Promise(async (resolve, reject) => {
-        if (designs < 20) {
+        if (designs < 20 || bio === null || bio === "") {
+            console.log(`${designs} is not enough.`);
+            return resolve();
+        }
+
+        if (!bio.includes("@") && !bio.includes(".com")) {
+            console.log("Didn't find any keywords");
             return resolve();
         }
         const artistObject = {
@@ -202,7 +208,7 @@ const checkArtist = (artistLink) => {
 
 const index = async (options) => {
     return new Promise(async (resolve, reject) => {
-        let discoverCount = 5;
+        let discoverCount = 20;
         var inList;
 
         while (true) {
