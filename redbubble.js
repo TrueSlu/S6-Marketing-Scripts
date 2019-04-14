@@ -16,6 +16,7 @@ const scrapeTopSellingStickers = (max) => {
                 temphref = art.attrs.href;
                 artistName = temphref.split("/")[2];
                 let inList = await checkArtist(artistName);
+                console.log(inList);
                 if (!inList) {
                     await actionArtist(artistName);
                 } else {
@@ -117,11 +118,22 @@ const checkArtist = (name) => {
                 }
             }
 
-            if (stop === 0) {
+            /*
+            if (data.includes('comradesupreme')) {
+                return resolve(true);
+            } else {
                 csvdata.write("./sheets/trash.csv", [{ name: name }], { append: true, header: 'name' }).then(() => {
                     return resolve(false);
                 })
             }
+            */
+
+            if (stop === 0) {
+                csvdata.write("./sheets/trash.csv", [{ name: name }], { append: true, header: 'name' }).then(() => {
+                    return resolve(false);
+                })  
+            }
+            
         })
     });
 }
