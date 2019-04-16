@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const scrapeTopSellingStickers = (max) => {
     return new Promise(async (resolve, reject) => {
-        let count = 0;
+        let count = 300;
         while (count < max) {
             response = await fetch("https://www.redbubble.com/shop/top+selling+stickers?ref=sort_order_change_top_selling&page=" + count);
             HTML = await response.text();
@@ -54,12 +54,13 @@ const getArtistInfo = (HTML) => {
     return new Promise((resolve, reject) => {
         try {
             const soup = new JSSoup(HTML);
-            const bioElement = soup.find('p', attrs={ class: 'app-entries-artistProfile-components-ProfileInfo-ProfileInfo_shortBioText_3nXbY' });
-
+            const bioElement2 = soup.find('p', attrs={ class: 'app-entries-artistProfile-components-ProfileInfo-ProfileInfo_shortBioText_3nXbY' });
+            const bioElement = soup.find('div', attrs={ class: 'profile-bio' });
             var bio;
 
             if (bioElement) {
                 bio = bioElement.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
+                bio = bio + bioElement2.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
             } else {
                 let bio = null;
             }
@@ -138,7 +139,7 @@ const checkArtist = (name) => {
     });
 }
 
-scrapeTopSellingStickers(100);
+scrapeTopSellingStickers(5000);
 
 /*index({
     maxArtists: null, //set to a number if you want to limit the max number of artists checked
