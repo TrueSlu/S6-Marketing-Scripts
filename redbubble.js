@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 
 const scrapeTopSellingStickers = (max) => {
     return new Promise(async (resolve, reject) => {
-        let count = 300;
+        let count = 0;
         while (count < max) {
             response = await fetch("https://www.redbubble.com/shop/top+selling+stickers?ref=sort_order_change_top_selling&page=" + count);
             HTML = await response.text();
@@ -60,9 +60,11 @@ const getArtistInfo = (HTML) => {
 
             if (bioElement) {
                 bio = bioElement.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
-                bio = bio + bioElement2.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
+                if (bioElement2) {
+                    bio = bio + bioElement2.text.replace(/\n/g, "").replace(/,/g, "").replace(/;/g, "");
+                }
             } else {
-                let bio = null;
+                bio = null;
             }
 
             resolve({ bio: bio });
